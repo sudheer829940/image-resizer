@@ -6,7 +6,7 @@ Upload any image, set custom width & height, resize it, and download the resized
 ---
 
 ## 🚀 Live Demo
-👉 [Click here to try the tool](https://YOUR-USERNAME.github.io/image-resizer/)
+👉 [Click here to try the tool](https://YOUR-USERNAME.github.io/image-resizer)
 
 ---
 

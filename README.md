@@ -6,7 +6,7 @@ Tum apni image upload kar sakte ho, width aur height set kar sakte ho, aur fir i
 ---
 
 ## 🚀 Live Demo
-👉 (https://sudheer829940.github.io/image-resizer)  
+👉 (https://sudheer829940.github.io/image-resizer/)  
 
 ---
 

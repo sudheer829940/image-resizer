@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Image Compressor & Download</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1724;
+  --card:#0b1220;
+  --accent:#6b5cff;
+  --accent2:#ff7a59;
+  --muted:#cbd5e1;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,var(--bg),#071026);color:var(--muted);display:flex;align-items:center;justify-content:center;flex-direction:column;}
+.landing{width:90%;max-width:600px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:20px;padding:60px 40px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.6);color:#fff;display:flex;flex-direction:column;gap:24px;transition:all 0.4s ease;}
+.landing h1{font-size:36px;font-weight:800;font-style:italic;margin:0;background:linear-gradient(90deg,#ffe259,#ffa751);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.landing button{padding:14px 28px;font-size:18px;font-weight:600;color:#fff;background:linear-gradient(90deg,#ff6a00,#ee0979,#6a11cb);border:none;border-radius:12px;cursor:pointer;transition:all 0.3s ease;}
+.landing button:hover{transform:scale(1.05);box-shadow:0 8px 20px rgba(0,0,0,0.4);}
+#appUI{display:none;width:90%;max-width:1000px;margin-top:24px;}
+.card{background:var(--card);padding:20px;border-radius:var(--radius);}
+section,aside{margin-top:12px;}
+label{display:block;margin-bottom:6px;font-size:14px;color:var(--muted);}
+input,select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);background:transparent;color:var(--muted);margin-bottom:12px;}
+.preview img{max-width:100%;max-height:240px;object-fit:contain;border-radius:10px;}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:12px;}
+.thumb img{width:100%;height:120px;object-fit:cover;border-radius:8px;}
+.sizeInfo{font-size:12px;color:#fff;text-align:right;margin-top:-10px;}
+</style>
+</head>
+<body>
+<div class="landing">
+  <h1>Image Compressor & Download</h1>
+  <button id="startBtn">Select Images</button>
+  <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
+</div>
+<div id="appUI">
+  <div class="card">
+    <section>
+      <label>Preview</label>
+      <div class="preview" id="previewBox"><span>No image selected</span></div>
+      <div class="thumbs" id="thumbs"></div>
+    </section>
+    <aside>
+      <label>Reduce Width (px)</label>
+      <input type="number" id="reduceWidth" placeholder="Enter width" />
+      <label>Reduce Height (px)</label>
+      <input type="number" id="reduceHeight" placeholder="Enter height" />
+      <label>Quality (0.1 - 1)</label>
+      <input type="number" id="quality" min="0.1" max="1" step="0.05" value="0.95" />
+      <div class="sizeInfo" id="estimatedSize">Estimated Total Size: 0 KB</div>
+      <button id="downloadBtn" style="margin-top:12px;">Download Compressed Images</button>
+    </aside>
+  </div>
+</div>
+<script>
+const startBtn = document.getElementById('startBtn');
+const fileInput = document.getElementById('fileInput');
+const appUI = document.getElementById('appUI');
+const thumbs = document.getElementById('thumbs');
+const previewBox = document.getElementById('previewBox');
+const reduceWidth = document.getElementById('reduceWidth');
+const reduceHeight = document.getElementById('reduceHeight');
+const qualityEl = document.getElementById('quality');
+const downloadBtn = document.getElementById('downloadBtn');
+const estimatedSize = document.getElementById('estimatedSize');
+
+let imgs = [], selected=-1;
+
+startBtn.addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',(e)=>{
+  const files = Array.from(e.target.files).filter(f=>f.type.startsWith('image/'));
+  files.forEach(f=>{
+    const reader = new FileReader();
+    reader.onload = (ev)=>{ imgs.push({file:f,dataURL:ev.target.result}); renderThumbs(); updatePreview(); updateSizeEstimate(); };
+    reader.readAsDataURL(f);
+  });
+  document.querySelector('.landing').style.display='none';
+  appUI.style.display='block';
+});
+
+function renderThumbs(){
+  thumbs.innerHTML='';
+  imgs.forEach((it,idx)=>{
+    const div=document.createElement('div'); div.className='thumb';
+    div.innerHTML=`<img src="${it.dataURL}"/><div style='text-align:center;font-size:12px;'>Image ${idx+1}</div>`;
+    div.addEventListener('click',()=>{ selected=idx; updatePreview(); });
+    thumbs.appendChild(div);
+  });
+}
+
+function updatePreview(){
+  previewBox.innerHTML='';
+  if(selected<0 || !imgs[selected]){ previewBox.innerHTML='<span>No image selected</span>'; return; }
+  const im=document.createElement('img'); im.src=imgs[selected].dataURL;
+  previewBox.appendChild(im);
+}
+
+function updateSizeEstimate(){
+  let totalBytes = 0;
+  const q = parseFloat(qualityEl.value)||0.95;
+  imgs.forEach(it=>{
+    const img = new Image();
+    img.src = it.dataURL;
+    img.onload = ()=>{
+      const c=document.createElement('canvas');
+      const w=parseInt(reduceWidth.value)||img.width;
+      const h=parseInt(reduceHeight.value)||img.height;
+      c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      const dataUrl = c.toDataURL('image/jpeg',q);
+      totalBytes += Math.round((dataUrl.length*3)/4);
+      estimatedSize.textContent = `Estimated Total Size: ${(totalBytes/1024).toFixed(2)} KB`;
+    }
+  });
+}
+
+[reduceWidth, reduceHeight, qualityEl].forEach(el=>el.addEventListener('input', updateSizeEstimate));
+
+function downloadImages(){
+  const q = parseFloat(qualityEl.value)||0.95;
+  imgs.forEach((it,idx)=>{
+    const img = new Image();
+    img.src = it.dataURL;
+    img.onload = ()=>{
+      const c=document.createElement('canvas');
+      const w=parseInt(reduceWidth.value)||img.width;
+      const h=parseInt(reduceHeight.value)||img.height;
+      c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      c.toBlob((blob)=>{
+        const a=document.createElement('a');
+        a.href=URL.createObjectURL(blob);
+        a.download = `compressed_${idx+1}.jpg`;
+        a.click();
+      },'image/jpeg',q);
+    }
+  });
+}
+
+downloadBtn.addEventListener('click',downloadImages);
+</script>
+</body>
+</html>
